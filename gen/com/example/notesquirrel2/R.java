@@ -45,6 +45,7 @@ public final class R {
         public static final int hello_world=0x7f050002;
         public static final int password_image=0x7f050007;
         public static final int save_btn_text=0x7f050004;
+        public static final int storing_data=0x7f050008;
         public static final int title_activity_image=0x7f050006;
         public static final int toast_cant_save=0x7f050005;
     }

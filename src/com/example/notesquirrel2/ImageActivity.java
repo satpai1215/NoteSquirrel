@@ -1,19 +1,23 @@
 package com.example.notesquirrel2;
 
+import java.util.List;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.graphics.Point;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.View.OnTouchListener;
 import android.widget.ImageView;
 
-public class ImageActivity extends Activity {
+public class ImageActivity extends Activity implements PointCollectorListener {
+	
+	private PointCollector pointCollector = new PointCollector();
+	private Database db = new Database(this);
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +26,8 @@ public class ImageActivity extends Activity {
 
 		addTouchListener();
 		showPrompt();
+		
+		pointCollector.setListener(this);
 	}
 	
 	private void showPrompt() {
@@ -29,8 +35,6 @@ public class ImageActivity extends Activity {
 		builder.setPositiveButton("OK", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				// TODO Auto-generated method stub
-				
 			}
 		});
 		
@@ -40,23 +44,13 @@ public class ImageActivity extends Activity {
 		AlertDialog dlg = builder.create();
 		
 		dlg.show();
+		
 	}
 
 	private void addTouchListener() {
 		ImageView image = (ImageView) findViewById(R.id.touch_image);
 		
-		image.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				float x = event.getX();
-				float y = event.getY();
-				
-				String message = String.format("Coordinates: (%.2f, %.2f)", x, y);
-				Log.d(MainActivity.DEBUGTAG, message);
-						
-				return false;
-			}
-		});
+		image.setOnTouchListener(pointCollector);
 	}
 
 	@Override
@@ -64,6 +58,48 @@ public class ImageActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.image, menu);
 		return true;
+	}
+
+	public void pointsCollected(final List<Point> points) {
+		Log.d(MainActivity.DEBUGTAG, "Collected " + points.size() + " points.");
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(R.string.storing_data);
+		
+		final AlertDialog dlg = builder.create();
+		dlg.show();
+		
+		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+			protected Void doInBackground(Void... params) {
+				//delay to see dialog
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					
+				}
+				
+				//stores points to notes.db (see Database.java)
+				db.storePoints(points);
+				Log.d(MainActivity.DEBUGTAG, "PassPoints Stored");
+				
+				return null;
+			}
+
+			//runs after doInBackground method finishes
+			protected void onPostExecute(Void result) {
+				dlg.dismiss();
+			}
+			
+		};
+		
+		task.execute();
+		
+		List<Point> list = db.getPoints();
+		
+		for(Point point: list) {
+			Log.d(MainActivity.DEBUGTAG, String.format("Got point: (%d, %d)",  point.x, point.y));
+		}
+		
 	}
 
 }
